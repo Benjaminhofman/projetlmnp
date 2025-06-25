@@ -988,6 +988,8 @@ class ExcelInterface:
         
         # Configuration du style
         self.style = ttk.Style()
+        # Utilisation d'un thème plus moderne
+        self.style.theme_use("clam")
         self.configure_styles()
         
         # Construction de l'interface
@@ -1049,33 +1051,41 @@ class ExcelInterface:
         """Configuration des styles de l'interface"""
         self.style.configure("Main.TFrame", background=self.COLORS['bg'])
         self.style.configure("Header.TFrame", background=self.COLORS['header'])
-        
-        self.style.configure("Green.TButton", 
-                            font=('Arial', 11),
+        self.style.configure("Header.TLabel",
+                            font=('Segoe UI', 11, 'bold'),
+                            background=self.COLORS['header'],
+                            foreground='white')
+
+        self.style.configure("Green.TButton",
+                            font=('Segoe UI', 10, 'bold'),
                             padding=10,
                             background=self.COLORS['btn_green'])
-        
+
         self.style.configure("Red.TButton",
-                            font=('Arial', 11),
+                            font=('Segoe UI', 10, 'bold'),
                             padding=10,
                             background=self.COLORS['btn_red'])
-        
+
         self.style.configure("Treeview",
-                            font=('Arial', 10),
-                            rowheight=25,
+                            font=('Segoe UI', 10),
+                            rowheight=28,
                             background="white",
+                            fieldbackground="white",
                             foreground="black")
-        
+
         self.style.configure("Treeview.Heading",
-                            font=('Arial', 10, 'bold'),
+                            font=('Segoe UI', 10, 'bold'),
                             foreground="black",
                             background="white",
                             relief="solid",
-                            padding=(5,35))
+                            padding=(5, 25))
         
         self.style.map("Treeview.Heading",
                       background=[('active', 'white')],
                       foreground=[('active', 'black')])
+
+        self.style.map("Treeview",
+                      background=[('selected', self.COLORS['highlight'])])
 
     def build_interface(self):
         """Construction de l'interface principale"""
@@ -1101,7 +1111,7 @@ class ExcelInterface:
         
         # Bouton de sélection de fichier
         self.select_file_btn = ttk.Button(header,
-                                        text="Sélectionner fichier Excel",
+                                        text="📂 Sélectionner Excel",
                                         command=self.select_file,
                                         style="Green.TButton")
         self.select_file_btn.pack(side=tk.LEFT, padx=5)
@@ -1109,9 +1119,7 @@ class ExcelInterface:
         # Label pour le nom du fichier
         self.file_label = ttk.Label(header,
                                   text="Aucun fichier sélectionné",
-                                  font=('Arial', 11),
-                                  foreground="white",
-                                  background=self.COLORS['header'])
+                                  style="Header.TLabel")
         self.file_label.pack(side=tk.LEFT, padx=20)
         
         # Boutons d'action
@@ -1119,22 +1127,22 @@ class ExcelInterface:
         buttons_frame.pack(side=tk.RIGHT, padx=5)
         
         ttk.Button(buttons_frame,
-                  text="Saisie des données",
+                  text="📝 Saisie",
                   command=self.show_data_entry,
                   style="Red.TButton").pack(side=tk.LEFT, padx=5)
         
         ttk.Button(buttons_frame,
-                  text="Synthèse fiscale",
+                  text="📊 Synthèse",
                   command=self.show_fiscal_synthesis,
                   style="Red.TButton").pack(side=tk.LEFT, padx=5)
         
         ttk.Button(buttons_frame,
-                  text="Actualiser",
+                  text="🔄 Actualiser",
                   command=self.refresh_data,
                   style="Green.TButton").pack(side=tk.LEFT, padx=5)
                   
         ttk.Button(buttons_frame,
-                  text="Version Web",
+                  text="🌐 Version Web",
                   command=self.open_web_version,
                   style="Green.TButton").pack(side=tk.LEFT, padx=5)
         
