@@ -1386,15 +1386,15 @@ class ExcelInterface:
             messagebox.showerror("Erreur", f"Erreur lors de l'actualisation: {str(e)}")
 
     def update_data_tree(self, df=None):
-        """Mise à jour du tableau principal des données avec la feuille synthèse"""
+        """Mise à jour du tableau principal des données avec la feuille web"""
         try:
             # Nettoyage des données existantes
             for item in self.data_tree.get_children():
                 self.data_tree.delete(item)
-            
+
             if self.workbook:
-                # Lecture de la feuille synthèse
-                synthese_sheet = self.workbook.Sheets("synthese")
+                # Lecture de la feuille web
+                web_sheet = self.workbook.Sheets("web")
                 
                 # Configuration des colonnes basée sur la structure réelle
                 columns = [
@@ -1417,43 +1417,37 @@ class ExcelInterface:
                     self.data_tree.heading(col, text=col)
                     self.data_tree.column(col, width=column_widths[i], anchor="center")
                 
-                # Données des régimes avec leurs positions dans la feuille synthèse
-                # Basé sur l'analyse : lignes 4, 5, 6, 7 et colonnes A, B, C, D, E, F, G, H
+                # Configuration des couleurs alternées
+                # Données des régimes avec leurs positions dans la feuille web
                 regime_rows = [
-                    (4, "micro nu + meublé"),     # Ligne 4
-                    (5, "SCI IS"),               # Ligne 5  
-                    (6, "SCI IS PREL BONI"),     # Ligne 6
-                    (7, "SCI IR")                # Ligne 7
+                    (2, "micro nu + meublé"),
+                    (3, "SCI IS"),
+                    (4, "SCI IS PREL BONI"),
+                    (5, "SCI IR")
                 ]
-                
-                # Insertion des données
+
+                # Insertion des données calculées depuis la feuille web
                 for row_num, regime_name in regime_rows:
                     try:
-                        # Lecture des valeurs des colonnes B à H (indices 1 à 7)
-                        values = []
-                        values.append(regime_name)  # Nom du régime
-                        
-                        # Colonnes B à H (coût moyen annuel 40 ans, durée détention, etc.)
-                        for col_index in range(1, 8):  # B=1, C=2, D=3, E=4, F=5, G=6, H=7
-                            cell_value = synthese_sheet.Cells(row_num, col_index + 1).Value  # +1 car Excel est 1-indexed
-                            
-                            if cell_value is not None:
-                                formatted_value = self.format_number(cell_value)
-                                values.append(f"{formatted_value} €")
-                            else:
-                                values.append("-")
-                        
-                        # Insertion de la ligne avec style alterné
+                        cost_global = web_sheet.Range(f"B{row_num}").Value or 0
+
+                        values = [
+                            regime_name,
+                            self.format_number(cost_global / 40) if cost_global > 0 else "-",
+                            self.format_number(cost_global / 20) if cost_global > 0 else "-",
+                            self.format_number(cost_global),
+                            self.format_number(cost_global),
+                            "-",
+                            "-",
+                            self.format_number(cost_global)
+                        ]
+
                         tag = f"row_{len(self.data_tree.get_children()) % 2}"
                         self.data_tree.insert("", "end", values=values, tags=(tag,))
-                        
                     except Exception as e:
                         print(f"Erreur pour le régime {regime_name}: {str(e)}")
-                        # Insertion d'une ligne avec des valeurs par défaut en cas d'erreur
                         error_values = [regime_name] + ["Erreur"] * 7
                         self.data_tree.insert("", "end", values=error_values)
-                
-                # Configuration des couleurs alternées
                 self.data_tree.tag_configure("row_0", background="#FFFFFF")
                 self.data_tree.tag_configure("row_1", background="#F5F9FF")
                         
