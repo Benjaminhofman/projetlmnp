@@ -611,8 +611,8 @@ class DataEntryForm(tk.Toplevel):
                     main_window.update_data_tree()
                 if hasattr(main_window, 'refresh_input_summary'):
                     main_window.refresh_input_summary()
-                if hasattr(main_window, 'refresh_fiscal_summary'):
-                    main_window.refresh_fiscal_summary()
+                if hasattr(main_window, 'extract_web_data'):
+                    main_window.web_data = main_window.extract_web_data()
                     
             except Exception as e:
                 print(f"Erreur lors de la mise à jour: {str(e)}")
@@ -976,6 +976,7 @@ class ExcelInterface:
         # Initialisation du serveur web
         self.web_server = WebServer()
         self.server_thread = None
+        self.web_data = {}
         
         # Couleurs
         self.COLORS = {
@@ -1186,7 +1187,6 @@ class ExcelInterface:
         
         # Création des tableaux récapitulatifs
         self.create_input_summary(sub_notebook)
-        self.create_fiscal_summary(sub_notebook)
     
     def create_input_summary(self, notebook):
         """Création du tableau récapitulatif des données saisies"""
@@ -1329,7 +1329,7 @@ class ExcelInterface:
             
             # Mise à jour des autres données
             self.refresh_input_summary()
-            self.refresh_fiscal_summary()
+            self.web_data = self.extract_web_data()
             
             # Configuration du serveur web
             self.web_server.set_workbook(self.workbook)
@@ -1372,7 +1372,7 @@ class ExcelInterface:
                 
                 # Mise à jour des récapitulatifs
                 self.refresh_input_summary()
-                self.refresh_fiscal_summary()
+                self.web_data = self.extract_web_data()
                 
                 # Forcer la mise à jour du web server
                 self.web_server.update_cache()
@@ -1652,6 +1652,26 @@ class ExcelInterface:
             webbrowser.open('http://localhost:5000')
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de l'ouverture de la version web: {str(e)}")
+
+    def extract_web_data(self):
+        """Extrait les données principales de la feuille 'web'."""
+        data = {}
+        if not self.workbook:
+            return data
+        try:
+            sheet = self.workbook.Sheets("web")
+            regimes = {
+                "micro nu + meublé": 2,
+                "SCI IS": 3,
+                "SCI IS PREL BONI": 4,
+                "SCI IR": 5,
+            }
+            for name, row in regimes.items():
+                value = sheet.Range(f"B{row}").Value or 0
+                data[name] = value
+        except Exception as e:
+            print(f"Erreur lors de l'extraction des données de la feuille web: {str(e)}")
+        return data
 
     # === MÉTHODES DE GESTION DE L'HISTORIQUE ===
     
