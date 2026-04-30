@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rendement client</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; background:#f7f9fc; color:#1f2937; }
+    table { width:100%; border-collapse: collapse; background:#fff; }
+    th, td { border:1px solid #d1d5db; padding:10px; text-align:left; }
+    th { background:#eef2ff; }
+    .rendement-btn { color:#1d4ed8; text-decoration: underline; cursor:pointer; background:none; border:none; padding:0; font:inherit; }
+    dialog { border:none; border-radius:8px; width:min(760px,95vw); }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; }
+    label { display:flex; flex-direction:column; font-size:14px; gap:6px; }
+    input { padding:8px; border:1px solid #cbd5e1; border-radius:6px; }
+    .row { margin:12px 0; }
+    .actions { display:flex; gap:10px; justify-content:flex-end; }
+    .calc-box { background:#eff6ff; border:1px solid #bfdbfe; padding:10px; border-radius:6px; white-space:pre-line; }
+  </style>
+</head>
+<body>
+  <h1>Suivi du rendement client</h1>
+  <p>Cliquez sur le rendement d'un client pour modifier ses valeurs.</p>
+
+  <table id="clients-table">
+    <thead>
+      <tr>
+        <th>Client</th>
+        <th>Temps passé</th>
+        <th>Honoraires cpta</th>
+        <th>Résultat R</th>
+        <th>Ancienneté (ans)</th>
+        <th>Rendement</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <dialog id="edit-dialog">
+    <h2 id="dialog-title">Modifier le client</h2>
+    <div class="grid">
+      <label>Temps passé (heures)
+        <input id="tempsPasse" type="number" min="0" step="0.1" />
+      </label>
+      <label>Honoraires cpta (€)
+        <input id="honorairesCpta" type="number" min="0" step="1" />
+      </label>
+      <label>Résultat R (€)
+        <input id="resultatR" type="number" step="1" />
+      </label>
+      <label>Ancienneté (années)
+        <input id="anciennete" type="number" min="0" step="1" />
+      </label>
+    </div>
+
+    <div class="row calc-box" id="rendement-info"></div>
+
+    <div class="actions">
+      <button id="cancel-btn" type="button">Annuler</button>
+      <button id="save-btn" type="button">Enregistrer</button>
+    </div>
+  </dialog>
+
+  <script>
+    const clients = [
+      { id: 1, nom: 'Client A', tempsPasse: 12, honorairesCpta: 1400, resultatR: 2400, anciennete: 3 },
+      { id: 2, nom: 'Client B', tempsPasse: 8, honorairesCpta: 900, resultatR: 1600, anciennete: 1 }
+    ];
+
+    let activeClientId = null;
+
+    const tbody = document.querySelector('#clients-table tbody');
+    const dialog = document.getElementById('edit-dialog');
+
+    function calculerRendement(client) {
+      const base = (client.honorairesCpta + client.resultatR);
+      if (client.tempsPasse <= 0) return 0;
+      return (base / client.tempsPasse) * (1 + (client.anciennete * 0.02));
+    }
+
+    function formatMoney(v) { return `${Math.round(v).toLocaleString('fr-FR')} €`; }
+
+    function renderTable() {
+      tbody.innerHTML = '';
+      clients.forEach(client => {
+        const tr = document.createElement('tr');
+        const rendement = calculerRendement(client);
+        tr.innerHTML = `
+          <td>${client.nom}</td>
+          <td>${client.tempsPasse}</td>
+          <td>${formatMoney(client.honorairesCpta)}</td>
+          <td>${formatMoney(client.resultatR)}</td>
+          <td>${client.anciennete}</td>
+          <td><button class="rendement-btn" data-id="${client.id}">${formatMoney(rendement)}</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.querySelectorAll('.rendement-btn').forEach(btn => {
+        btn.addEventListener('click', () => openEditor(Number(btn.dataset.id)));
+      });
+    }
+
+    function updateInfo(client) {
+      const base = client.honorairesCpta + client.resultatR;
+      const bonusAnc = 1 + (client.anciennete * 0.02);
+      const rendement = calculerRendement(client);
+      document.getElementById('rendement-info').textContent =
+`Caractéristiques :
+- Temps passé: ${client.tempsPasse} h
+- Honoraires cpta: ${formatMoney(client.honorairesCpta)}
+- Résultat R: ${formatMoney(client.resultatR)}
+- Ancienneté: ${client.anciennete} ans
+
+Calcul du rendement :
+((Honoraires cpta + Résultat R) / Temps passé) × (1 + Ancienneté × 2%)
+((${Math.round(client.honorairesCpta)} + ${Math.round(client.resultatR)}) / ${client.tempsPasse}) × ${bonusAnc.toFixed(2)} = ${formatMoney(rendement)}`;
+    }
+
+    function openEditor(id) {
+      activeClientId = id;
+      const client = clients.find(c => c.id === id);
+      document.getElementById('dialog-title').textContent = `Modifier ${client.nom}`;
+      document.getElementById('tempsPasse').value = client.tempsPasse;
+      document.getElementById('honorairesCpta').value = client.honorairesCpta;
+      document.getElementById('resultatR').value = client.resultatR;
+      document.getElementById('anciennete').value = client.anciennete;
+      updateInfo(client);
+      dialog.showModal();
+    }
+
+    ['tempsPasse', 'honorairesCpta', 'resultatR', 'anciennete'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        const client = {
+          tempsPasse: Number(document.getElementById('tempsPasse').value || 0),
+          honorairesCpta: Number(document.getElementById('honorairesCpta').value || 0),
+          resultatR: Number(document.getElementById('resultatR').value || 0),
+          anciennete: Number(document.getElementById('anciennete').value || 0)
+        };
+        updateInfo(client);
+      });
+    });
+
+    document.getElementById('save-btn').addEventListener('click', () => {
+      const client = clients.find(c => c.id === activeClientId);
+      client.tempsPasse = Number(document.getElementById('tempsPasse').value || 0);
+      client.honorairesCpta = Number(document.getElementById('honorairesCpta').value || 0);
+      client.resultatR = Number(document.getElementById('resultatR').value || 0);
+      client.anciennete = Number(document.getElementById('anciennete').value || 0);
+      dialog.close();
+      renderTable();
+    });
+
+    document.getElementById('cancel-btn').addEventListener('click', () => dialog.close());
+
+    renderTable();
+  </script>
+</body>
+</html>
